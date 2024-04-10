@@ -1,0 +1,67 @@
+version: '3.4'
+
+services:
+  farmasenseapi:
+    depends_on:
+      - mysql
+      - seq
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - IdentityConnection=Server=mysql;Database=Farmasense;User ID=admin;password=admin
+      - JwtConfiguration__Secret=this is my custom Secret key for authentication
+      - JwtConfiguration__TokenLifetime=08:01:00
+      - Seq__ServerUrl=http://seq:5341
+      - Seq__MinimumLevel=Trace
+      - Seq__LevelOverride:Microsoft=Warning
+    ports:
+      - "8000:8080"
+    restart: always
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+    networks:
+       - network
+
+  mysql:
+    restart: always
+    environment: 
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_DATABASE: Farmasense
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data1:/var/lib/mysql
+      - "~/sql-scripts/setup.sql:/docker-entrypoint-initdb.d/1.sql"    
+    networks:
+       - network
+ 
+  seq:
+    ports:
+      - "5349:5341"
+      - "8082:80"
+    environment:
+      - ACCEPT_EULA=Y
+    restart: unless-stopped
+    volumes:
+      - seq_data:/data
+    networks:
+      - network
+
+  portainer:
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    ports:
+      - "9001:8000"
+      - "9000:9000"
+    networks:
+       - network
+ 
+networks:
+    network:
+        name: network 
